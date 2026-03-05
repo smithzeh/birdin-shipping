@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Courier Service</title>
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <header>
+        <img src="logo.png" alt="Birdin Shipment Logo">
+        <h1>Admin Panel</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Welcome to the Admin Panel</h2>
+            <p>Manage your shipments efficiently. Log new parcels, track existing ones, and ensure smooth delivery operations.</p>
+            <img src="https://via.placeholder.com/600x300" alt="Courier Service" style="width: 100%; border-radius: 8px;">
+        </section>
+        <section>
+            <h2>Dashboard</h2>
+            <button id="create-parcel">Create Parcel</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tracking Code</th>
+                        <th>Sender</th>
+                        <th>Receiver</th>
+                        <th>Current Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="parcel-list">
+                    <!-- Parcel rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Courier Service</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
