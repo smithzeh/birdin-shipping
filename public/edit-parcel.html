@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Parcel</title>
+    <link rel="stylesheet" href="./admin-styles.css">
+</head>
+<body>
+    <header>
+        <img src="../public/logo.png" alt="Birdin Shipment Logo">
+        <h1>Edit Parcel</h1>
+    </header>
+    <main>
+        <section>
+            <form id="edit-parcel-form">
+                <label for="current-location">Current Location:</label>
+                <input type="text" id="current-location" name="current-location" required>
+
+                <label for="arrive-date">Arrive Date:</label>
+                <input type="date" id="arrive-date" name="arrive-date" required>
+
+                <label for="status">Status:</label>
+                <select id="status" name="status" required>
+                    <option value="Pending">Pending</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Arrived">Arrived</option>
+                    <option value="Delivered">Delivered</option>
+                </select>
+
+                <label for="important-note">Important Note:</label>
+                <textarea id="important-note" name="important-note"></textarea>
+
+                <button type="submit">Save Changes</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Birdin Shipment</p>
+    </footer>
+    <script type="module" src="./admin.js"></script>
+</body>
+</html>
