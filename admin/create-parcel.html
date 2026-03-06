@@ -1,145 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Parcel</title>
+  <link rel="stylesheet" href="../styles.css">
 
-<title>Create Parcel</title>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-<link rel="stylesheet" href="../styles.css">
+    const SUPABASE_URL = "https://rirnbinprxnscfrfwrqt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi";
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SUPABASE_URL = "https://rirnbinprxnscfrfwrqt.supabase.co"
-const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi"
+    // Generate Tracking Code
+    function generateTrackingCode() {
+      return "TRK" + Math.floor(100000 + Math.random() * 900000);
+    }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("parcel-form");
 
-/* Generate Tracking Code */
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-function generateTrackingCode() {
+        const trackingCode = generateTrackingCode();
 
-return "BRD" + Math.floor(100000 + Math.random() * 900000)
+        const parcel = {
+          tracking_code: trackingCode,
+          sender_name: document.getElementById("sender_name").value,
+          sender_email: document.getElementById("sender_email").value,
+          sender_address: document.getElementById("sender_address").value,
 
-}
+          receiver_name: document.getElementById("receiver_name").value,
+          receiver_email: document.getElementById("receiver_email").value,
+          receiver_address: document.getElementById("receiver_address").value,
 
-document.addEventListener("DOMContentLoaded", () => {
+          destination: document.getElementById("destination").value,
+          parcel_details: document.getElementById("parcel_details").value,
 
-const form = document.getElementById("parcel-form")
+          date_sent: document.getElementById("date_sent").value,
+          expected_delivery: document.getElementById("expected_delivery").value,
 
-form.addEventListener("submit", async (e) => {
+          status: document.getElementById("status").value,
+          current_location: document.getElementById("current_location").value
+        };
 
-e.preventDefault()
+        const { error } = await supabase.from("parcels").insert([parcel]);
 
-const trackingCode = generateTrackingCode()
+        if (error) {
+          console.error("Error creating parcel:", error);
+          alert("Failed to create parcel. Check console for details.");
+          return;
+        }
 
-const parcel = {
-
-tracking_code: trackingCode,
-
-sender_name: document.getElementById("sender_name").value,
-sender_email: document.getElementById("sender_email").value,
-sender_address: document.getElementById("sender_address").value,
-
-receiver_name: document.getElementById("receiver_name").value,
-receiver_email: document.getElementById("receiver_email").value,
-receiver_address: document.getElementById("receiver_address").value,
-
-destination: document.getElementById("destination").value,
-details: document.getElementById("details").value,
-
-date_sent: document.getElementById("date_sent").value,
-expected_delivery: document.getElementById("expected_delivery").value,
-
-status: document.getElementById("status").value,
-current_location: document.getElementById("current_location").value
-
-}
-
-const { error } = await supabase
-.from("parcels")
-.insert([parcel])
-
-if (error) {
-
-alert("Error creating parcel")
-console.error(error)
-return
-
-}
-
-alert("Parcel created successfully!\nTracking Code: " + trackingCode)
-
-form.reset()
-
-})
-
-})
-</script>
-
+        alert(`Parcel created successfully!\nTracking Code: ${trackingCode}`);
+        form.reset();
+      });
+    });
+  </script>
 </head>
 
-
 <body>
+  <h1>Create New Parcel</h1>
 
-<h1>Create New Parcel</h1>
+  <form id="parcel-form">
+    <h3>Sender Information</h3>
+    <input id="sender_name" type="text" placeholder="Sender Name" required>
+    <input id="sender_email" type="email" placeholder="Sender Email" required>
+    <input id="sender_address" type="text" placeholder="Sender Address" required>
 
-<form id="parcel-form">
+    <h3>Receiver Information</h3>
+    <input id="receiver_name" type="text" placeholder="Receiver Name" required>
+    <input id="receiver_email" type="email" placeholder="Receiver Email" required>
+    <input id="receiver_address" type="text" placeholder="Receiver Address" required>
 
-<h3>Sender Information</h3>
+    <h3>Shipment Details</h3>
+    <input id="destination" type="text" placeholder="Destination Country / City" required>
+    <textarea id="parcel_details" placeholder="Package Details"></textarea>
 
-<input id="sender_name" type="text" placeholder="Sender Name" required>
-<input id="sender_email" type="email" placeholder="Sender Email" required>
-<input id="sender_address" type="text" placeholder="Sender Address" required>
+    <h3>Dates</h3>
+    <label>Date Sent</label>
+    <input id="date_sent" type="date" required>
 
+    <label>Expected Delivery</label>
+    <input id="expected_delivery" type="date" required>
 
-<h3>Receiver Information</h3>
+    <h3>Status</h3>
+    <select id="status">
+      <option value="Pending">Pending</option>
+      <option value="Shipped">Shipped</option>
+      <option value="In Transit">In Transit</option>
+      <option value="Out for Delivery">Out for Delivery</option>
+      <option value="Delivered">Delivered</option>
+    </select>
 
-<input id="receiver_name" type="text" placeholder="Receiver Name" required>
-<input id="receiver_email" type="email" placeholder="Receiver Email" required>
-<input id="receiver_address" type="text" placeholder="Receiver Address" required>
+    <input id="current_location" type="text" placeholder="Current Location">
 
-
-<h3>Shipment Details</h3>
-
-<input id="destination" type="text" placeholder="Destination Country / City" required>
-
-<textarea id="details" placeholder="Package Details"></textarea>
-
-
-<h3>Dates</h3>
-
-<label>Date Sent</label>
-<input id="date_sent" type="date" required>
-
-<label>Expected Delivery</label>
-<input id="expected_delivery" type="date" required>
-
-
-<h3>Status</h3>
-
-<select id="status">
-
-<option value="Pending">Pending</option>
-<option value="Shipped">Shipped</option>
-<option value="In Transit">In Transit</option>
-<option value="Out for Delivery">Out for Delivery</option>
-<option value="Delivered">Delivered</option>
-
-</select>
-
-
-<input id="current_location" type="text" placeholder="Current Location">
-
-
-<br><br>
-
-<button type="submit">Create Parcel</button>
-
-</form>
-
+    <br><br>
+    <button type="submit">Create Parcel</button>
+  </form>
 </body>
-
 </html>
