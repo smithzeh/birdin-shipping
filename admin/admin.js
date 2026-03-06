@@ -33,13 +33,17 @@ async function loadParcels() {
       <td>${parcel.receiver_name || parcel.receiver_address}</td>
       <td>${parcel.current_location || ""}</td>
       <td>${parcel.status}</td>
-      <td><button onclick="deleteParcel('${parcel.id}')">Delete</button></td>
+      <td>
+        <button onclick="editParcel('${parcel.id}')">Edit</button>
+        <button onclick="deleteParcel('${parcel.id}')">Delete</button>
+        <button onclick="printParcel('${parcel.id}')">Print</button>
+      </td>
     `;
     table.appendChild(row);
   });
 }
 
-// Delete parcel
+// Delete parcel (already existing)
 window.deleteParcel = async function(id) {
   const { error } = await supabase.from("parcels").delete().eq("id", id);
   if (error) {
@@ -50,16 +54,76 @@ window.deleteParcel = async function(id) {
   }
 };
 
-// Handle form submission
+// ---------- NEW: Edit Parcel ----------
+window.editParcel = async function(id) {
+  const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
+  if (error) {
+    console.error("Error fetching parcel:", error);
+    alert("Failed to fetch parcel. Check console.");
+    return;
+  }
+
+  // Prefill form with existing data
+  document.getElementById("parcel_id").value = data.id; // hidden field for editing
+  document.getElementById("sender_name").value = data.sender_name;
+  document.getElementById("sender_email").value = data.sender_email;
+  document.getElementById("sender_address").value = data.sender_address;
+
+  document.getElementById("receiver_name").value = data.receiver_name;
+  document.getElementById("receiver_email").value = data.receiver_email;
+  document.getElementById("receiver_address").value = data.receiver_address;
+
+  document.getElementById("destination").value = data.destination;
+  document.getElementById("parcel_details").value = data.parcel_details;
+
+  document.getElementById("date_sent").value = data.date_sent;
+  document.getElementById("expected_delivery").value = data.expected_delivery;
+
+  document.getElementById("status").value = data.status;
+  document.getElementById("current_location").value = data.current_location;
+
+  // Scroll to form
+  document.getElementById("parcel-form").scrollIntoView({ behavior: "smooth" });
+};
+
+// ---------- NEW: Print Parcel ----------
+window.printParcel = async function(id) {
+  const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
+  if (error) {
+    console.error("Error fetching parcel for print:", error);
+    alert("Failed to fetch parcel. Check console.");
+    return;
+  }
+
+  const content = `
+    <h2>Parcel Receipt</h2>
+    <p>Tracking Code: ${data.tracking_code}</p>
+    <p>Sender: ${data.sender_name} (${data.sender_email})</p>
+    <p>Receiver: ${data.receiver_name} (${data.receiver_email})</p>
+    <p>Destination: ${data.destination}</p>
+    <p>Parcel Details: ${data.parcel_details}</p>
+    <p>Status: ${data.status}</p>
+    <p>Current Location: ${data.current_location}</p>
+    <p>Date Sent: ${data.date_sent}</p>
+    <p>Expected Delivery: ${data.expected_delivery}</p>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(content);
+  printWindow.print();
+  printWindow.close();
+};
+
+// Handle form submission (existing create logic modified for edit)
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("parcel-form");
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const trackingCode = generateTrackingCode();
+    const parcelId = document.getElementById("parcel_id").value; // hidden field
 
     const parcel = {
-      tracking_code: trackingCode,
       sender_name: document.getElementById("sender_name").value,
       sender_email: document.getElementById("sender_email").value,
       sender_address: document.getElementById("sender_address").value,
@@ -74,17 +138,27 @@ document.addEventListener("DOMContentLoaded", () => {
       current_location: document.getElementById("current_location").value
     };
 
-    const { error } = await supabase.from("parcels").insert([parcel]);
+    try {
+      if (parcelId) {
+        // Update existing parcel
+        const { error } = await supabase.from("parcels").update(parcel).eq("id", parcelId);
+        if (error) throw error;
+        alert("Parcel updated successfully!");
+      } else {
+        // Create new parcel
+        parcel.tracking_code = generateTrackingCode();
+        const { error } = await supabase.from("parcels").insert([parcel]);
+        if (error) throw error;
+        alert(`Parcel created successfully!\nTracking Code: ${parcel.tracking_code}`);
+      }
 
-    if (error) {
-      console.error("Error creating parcel:", error);
-      alert("Failed to create parcel. Check console for details.");
-      return;
+      form.reset();
+      document.getElementById("parcel_id").value = ""; // reset hidden field
+      loadParcels();
+    } catch (err) {
+      console.error("Error saving parcel:", err);
+      alert("Failed to save parcel. Check console.");
     }
-
-    alert(`Parcel created successfully!\nTracking Code: ${trackingCode}`);
-    form.reset();
-    loadParcels();
   });
 
   // Initial load of parcels
