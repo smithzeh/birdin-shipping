@@ -10,9 +10,13 @@ function generateTrackingCode() {
   return "TRK" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// Handle form submission
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("parcel-form");
+
+  if (!form) {
+    console.error("Form with id 'parcel-form' not found!");
+    return;
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -31,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
       receiver_address: document.getElementById("receiver_address").value,
       
       destination: document.getElementById("destination").value,
-      parcel_details: document.getElementById("details").value,
+      parcel_details: document.getElementById("parcel_details").value, // <-- fixed ID
       
       date_sent: document.getElementById("date_sent").value,
       expected_delivery: document.getElementById("expected_delivery").value,
@@ -40,16 +44,20 @@ document.addEventListener("DOMContentLoaded", () => {
       current_location: document.getElementById("current_location").value
     };
 
-    // Insert into Supabase
-    const { data, error } = await supabase.from("parcels").insert([parcel]);
+    try {
+      const { data, error } = await supabase.from("parcels").insert([parcel]);
 
-    if (error) {
-      console.error("Error creating parcel:", error);
-      alert("Failed to create parcel. Check console for details.");
-      return;
+      if (error) {
+        console.error("Error creating parcel:", error);
+        alert("Failed to create parcel. Check console for details.");
+        return;
+      }
+
+      alert(`Parcel created successfully!\nTracking Code: ${trackingCode}`);
+      form.reset();
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("An unexpected error occurred. Check console.");
     }
-
-    alert(`Parcel created successfully!\nTracking Code: ${trackingCode}`);
-    form.reset();
   });
 });
