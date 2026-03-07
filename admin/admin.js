@@ -28,7 +28,6 @@ async function loadParcels() {
       .from("parcels")
       .select("*")
       .order("date_sent", { ascending: false });
-
     if (error) throw error;
 
     data.forEach(parcel => {
@@ -57,9 +56,7 @@ async function loadParcels() {
 // DELETE PARCEL
 // ----------------------------
 window.deleteParcel = async function(id) {
-  const confirmDelete = confirm("Delete this parcel?");
-  if (!confirmDelete) return;
-
+  if (!confirm("Delete this parcel?")) return;
   try {
     const { error } = await supabase.from("parcels").delete().eq("id", id);
     if (error) throw error;
@@ -78,12 +75,15 @@ window.editParcel = async function(id) {
     const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
     if (error) throw error;
 
-    // Show the popup
-    document.getElementById("parcel-form").style.display = "block";
-    document.getElementById("overlay").style.display = "block";
+    const formPopup = document.getElementById("parcel-form-popup");
+    const overlay = document.getElementById("overlay");
+    const form = document.getElementById("parcelForm");
+
+    formPopup.style.display = "block";
+    overlay.style.display = "block";
 
     // Prefill form fields
-    document.getElementById("parcel_id").value = data.id;
+    document.getElementById("parcel_id").value = data.id || "";
     document.getElementById("sender_name").value = data.sender_name || "";
     document.getElementById("sender_email").value = data.sender_email || "";
     document.getElementById("sender_address").value = data.sender_address || "";
@@ -97,8 +97,8 @@ window.editParcel = async function(id) {
     document.getElementById("status").value = data.status || "Pending";
     document.getElementById("current_location").value = data.current_location || "";
 
-    // Scroll to form
-    document.getElementById("parcel-form").scrollIntoView({ behavior: "smooth" });
+    form.scrollIntoView({ behavior: "smooth" });
+
   } catch (err) {
     console.error("Error fetching parcel:", err);
     alert("Failed to fetch parcel. Check console.");
@@ -106,91 +106,40 @@ window.editParcel = async function(id) {
 };
 
 // ----------------------------
-// PRINT PARCEL RECEIPT
-// ----------------------------
-window.printParcel = async function(id) {
-  try {
-    const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
-    if (error) throw error;
-
-    const receiptHTML = `
-    <html>
-    <head>
-      <title>Shipment Receipt</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-        .receipt { max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 30px; border-radius: 8px; }
-        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ff6600; padding-bottom: 10px; margin-bottom: 20px; }
-        .logo { height: 60px; }
-        .company { font-size: 24px; font-weight: bold; color: #ff6600; }
-        .title { text-align: center; font-size: 22px; margin: 20px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        .label { font-weight: bold; width: 200px; }
-        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #777; }
-        .tracking { font-size: 18px; font-weight: bold; text-align: center; margin-top: 10px; }
-      </style>
-    </head>
-    <body>
-      <div class="receipt">
-        <div class="header">
-          <div><img src="logo.png" class="logo"></div>
-          <div class="company">Birdin Shipment</div>
-        </div>
-        <div class="title">Shipment Receipt</div>
-        <div class="tracking">Tracking Code: ${data.tracking_code}</div>
-        <table>
-          <tr><td class="label">Sender</td><td>${data.sender_name} (${data.sender_email})</td></tr>
-          <tr><td class="label">Receiver</td><td>${data.receiver_name} (${data.receiver_email})</td></tr>
-          <tr><td class="label">Destination</td><td>${data.destination}</td></tr>
-          <tr><td class="label">Parcel Details</td><td>${data.parcel_details}</td></tr>
-          <tr><td class="label">Current Status</td><td>${data.status}</td></tr>
-          <tr><td class="label">Current Location</td><td>${data.current_location}</td></tr>
-          <tr><td class="label">Date Sent</td><td>${data.date_sent}</td></tr>
-          <tr><td class="label">Expected Delivery</td><td>${data.expected_delivery}</td></tr>
-        </table>
-        <div class="footer">
-          <p>Birdin Shipment Logistics</p>
-          <p>Thank you for shipping with us.</p>
-          <p>© 2026 Birdin Shipment</p>
-        </div>
-      </div>
-      <script>window.print();</script>
-    </body>
-    </html>
-    `;
-
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
-  } catch (err) {
-    console.error("Error printing parcel:", err);
-    alert("Failed to print parcel. Check console.");
-  }
-};
-
-// ----------------------------
-// HANDLE CREATE OR UPDATE PARCEL
+// CREATE / UPDATE PARCEL
 // ----------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("parcel-form");
+  const form = document.getElementById("parcelForm");
   const overlay = document.getElementById("overlay");
   const closeBtn = document.getElementById("close-form");
+  const createBtn = document.getElementById("create-parcel");
 
-  // Close button
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      form.reset();
-      document.getElementById("parcel_id").value = "";
-      form.style.display = "none";
-      overlay.style.display = "none";
-    });
-  }
+  // Open popup
+  if (createBtn) createBtn.onclick = () => {
+    form.reset();
+    document.getElementById("parcel_id").value = "";
+    document.getElementById("parcel-form-popup").style.display = "block";
+    overlay.style.display = "block";
+  };
+
+  // Close popup
+  if (closeBtn) closeBtn.onclick = () => {
+    form.reset();
+    document.getElementById("parcel_id").value = "";
+    document.getElementById("parcel-form-popup").style.display = "none";
+    overlay.style.display = "none";
+  };
+
+  overlay.onclick = () => {
+    form.reset();
+    document.getElementById("parcel_id").value = "";
+    document.getElementById("parcel-form-popup").style.display = "none";
+    overlay.style.display = "none";
+  };
 
   // Submit form
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-
     const parcelId = document.getElementById("parcel_id").value;
 
     const parcel = {
@@ -210,12 +159,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       if (parcelId) {
-        // Update existing parcel
         const { error } = await supabase.from("parcels").update(parcel).eq("id", parcelId);
         if (error) throw error;
         alert("Parcel updated successfully!");
       } else {
-        // Create new parcel
         parcel.tracking_code = generateTrackingCode();
         const { error } = await supabase.from("parcels").insert([parcel]);
         if (error) throw error;
@@ -224,9 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       form.reset();
       document.getElementById("parcel_id").value = "";
-      form.style.display = "none";
+      document.getElementById("parcel-form-popup").style.display = "none";
       overlay.style.display = "none";
       loadParcels();
+
     } catch (err) {
       console.error("Error saving parcel:", err);
       alert("Failed to save parcel. Check console.");
