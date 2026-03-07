@@ -8,7 +8,7 @@ const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ----------------------------
-// Generate random tracking code
+// GENERATE RANDOM TRACKING CODE
 // ----------------------------
 function generateTrackingCode() {
   return "TRK" + Math.floor(100000 + Math.random() * 900000);
@@ -78,7 +78,7 @@ window.editParcel = async function(id) {
     const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
     if (error) throw error;
 
-    // Show the form popup
+    // Show the popup
     document.getElementById("parcel-form").style.display = "block";
     document.getElementById("overlay").style.display = "block";
 
@@ -174,7 +174,20 @@ window.printParcel = async function(id) {
 // ----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("parcel-form");
+  const overlay = document.getElementById("overlay");
+  const closeBtn = document.getElementById("close-form");
 
+  // Close button
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      form.reset();
+      document.getElementById("parcel_id").value = "";
+      form.style.display = "none";
+      overlay.style.display = "none";
+    });
+  }
+
+  // Submit form
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -211,8 +224,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       form.reset();
       document.getElementById("parcel_id").value = "";
-      document.getElementById("parcel-form").style.display = "none";
-      document.getElementById("overlay").style.display = "none";
+      form.style.display = "none";
+      overlay.style.display = "none";
       loadParcels();
     } catch (err) {
       console.error("Error saving parcel:", err);
