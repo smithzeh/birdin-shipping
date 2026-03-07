@@ -78,6 +78,8 @@ window.editParcel = async function(id) {
     const form = document.getElementById("parcelForm");
     const overlay = document.getElementById("overlay");
 
+    if (!form) return;
+
     // Show the popup
     form.parentElement.style.display = "block";
     overlay.style.display = "block";
@@ -85,11 +87,11 @@ window.editParcel = async function(id) {
     // Prefill form fields safely
     document.getElementById("parcel_id").value = data.id || "";
     document.getElementById("sender_name").value = data.sender_name || "";
-    document.getElementById("sender_email")?.value = data.sender_email || "";
-    document.getElementById("sender_address")?.value = data.sender_address || "";
+    if (document.getElementById("sender_email")) document.getElementById("sender_email").value = data.sender_email || "";
+    if (document.getElementById("sender_address")) document.getElementById("sender_address").value = data.sender_address || "";
     document.getElementById("receiver_name").value = data.receiver_name || "";
-    document.getElementById("receiver_email")?.value = data.receiver_email || "";
-    document.getElementById("receiver_address")?.value = data.receiver_address || "";
+    if (document.getElementById("receiver_email")) document.getElementById("receiver_email").value = data.receiver_email || "";
+    if (document.getElementById("receiver_address")) document.getElementById("receiver_address").value = data.receiver_address || "";
     document.getElementById("destination").value = data.destination || "";
     document.getElementById("parcel_details").value = data.parcel_details || "";
     document.getElementById("date_sent").value = data.date_sent || "";
