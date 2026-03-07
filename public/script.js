@@ -8,166 +8,171 @@ const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ----------------------------
-// GENERATE RANDOM TRACKING CODE
+// TRACK PARCEL (PUBLIC PAGE)
 // ----------------------------
-function generateTrackingCode() {
-  return "TRK" + Math.floor(100000 + Math.random() * 900000);
-}
+const trackingForm = document.getElementById("tracking-form");
 
-// ----------------------------
-// LOAD PARCELS INTO TABLE
-// ----------------------------
-async function loadParcels() {
-  const parcelList = document.getElementById("parcel-list");
-  if (!parcelList) return;
+if (trackingForm) {
+  trackingForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  try {
-    const { data, error } = await supabase
-      .from("parcels")
-      .select("*")
-      .order("date_sent", { ascending: false });
+    const trackingCode = document.getElementById("customer-tracking-code").value.trim();
+    const resultDiv = document.getElementById("tracking-result");
 
-    if (error) throw error;
-
-    parcelList.innerHTML = "";
-
-    data.forEach(parcel => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${parcel.tracking_code}</td>
-        <td>${parcel.sender_name || "N/A"}</td>
-        <td>${parcel.receiver_name || "N/A"}</td>
-        <td>${parcel.current_location || "N/A"}</td>
-        <td>${parcel.status || "Pending"}</td>
-        <td>
-          <button onclick="editParcel('${parcel.id}')">Edit</button>
-          <button onclick="deleteParcel('${parcel.id}')">Delete</button>
-          <button onclick="printParcel('${parcel.id}')">Print</button>
-        </td>
-      `;
-      parcelList.appendChild(row);
-    });
-  } catch (err) {
-    console.error("Failed to load parcels:", err);
-  }
-}
-
-// ----------------------------
-// DELETE PARCEL
-// ----------------------------
-window.deleteParcel = async function(id) {
-  if (!confirm("Delete this parcel?")) return;
-  try {
-    const { error } = await supabase.from("parcels").delete().eq("id", id);
-    if (error) throw error;
-    loadParcels();
-  } catch (err) {
-    console.error("Error deleting parcel:", err);
-    alert("Failed to delete parcel. Check console.");
-  }
-};
-
-// ----------------------------
-// EDIT PARCEL
-// ----------------------------
-window.editParcel = async function(id) {
-  try {
-    const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
-    if (error || !data) throw error;
-
-    const form = document.getElementById("parcelForm");
-    const overlay = document.getElementById("overlay");
-
-    if (!form) return;
-
-    // Show the popup
-    form.parentElement.style.display = "block";
-    overlay.style.display = "block";
-
-    // Prefill form fields safely
-    document.getElementById("parcel_id").value = data.id || "";
-    document.getElementById("sender_name").value = data.sender_name || "";
-    if (document.getElementById("sender_email")) document.getElementById("sender_email").value = data.sender_email || "";
-    if (document.getElementById("sender_address")) document.getElementById("sender_address").value = data.sender_address || "";
-    document.getElementById("receiver_name").value = data.receiver_name || "";
-    if (document.getElementById("receiver_email")) document.getElementById("receiver_email").value = data.receiver_email || "";
-    if (document.getElementById("receiver_address")) document.getElementById("receiver_address").value = data.receiver_address || "";
-    document.getElementById("destination").value = data.destination || "";
-    document.getElementById("parcel_details").value = data.parcel_details || "";
-    document.getElementById("date_sent").value = data.date_sent || "";
-    document.getElementById("expected_delivery").value = data.expected_delivery || "";
-    document.getElementById("status").value = data.status || "Pending";
-    document.getElementById("current_location").value = data.current_location || "";
-  } catch (err) {
-    console.error("Error fetching parcel for edit:", err);
-    alert("Failed to fetch parcel. Check console.");
-  }
-};
-
-// ----------------------------
-// HANDLE CREATE OR UPDATE PARCEL
-// ----------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("parcelForm");
-  const overlay = document.getElementById("overlay");
-  const closeBtn = document.getElementById("close-form");
-
-  if (!form) return;
-
-  // Close button
-  closeBtn?.addEventListener("click", () => {
-    form.reset();
-    document.getElementById("parcel_id").value = "";
-    form.parentElement.style.display = "none";
-    overlay.style.display = "none";
-  });
-
-  // Submit form
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
-
-    const parcelId = document.getElementById("parcel_id").value;
-
-    const parcel = {
-      sender_name: document.getElementById("sender_name").value,
-      sender_email: document.getElementById("sender_email")?.value || "",
-      sender_address: document.getElementById("sender_address")?.value || "",
-      receiver_name: document.getElementById("receiver_name").value,
-      receiver_email: document.getElementById("receiver_email")?.value || "",
-      receiver_address: document.getElementById("receiver_address")?.value || "",
-      destination: document.getElementById("destination").value,
-      parcel_details: document.getElementById("parcel_details").value,
-      date_sent: document.getElementById("date_sent").value,
-      expected_delivery: document.getElementById("expected_delivery").value,
-      status: document.getElementById("status").value,
-      current_location: document.getElementById("current_location").value
-    };
+    resultDiv.innerHTML = "<p>Tracking shipment...</p>";
 
     try {
-      if (parcelId) {
-        // Update existing parcel
-        const { error } = await supabase.from("parcels").update(parcel).eq("id", parcelId);
-        if (error) throw error;
-        alert("Parcel updated successfully!");
-      } else {
-        // Create new parcel
-        parcel.tracking_code = generateTrackingCode();
-        const { error } = await supabase.from("parcels").insert([parcel]);
-        if (error) throw error;
-        alert(`Parcel created successfully!\nTracking Code: ${parcel.tracking_code}`);
+      const { data, error } = await supabase
+        .from("parcels")
+        .select("*")
+        .eq("tracking_code", trackingCode)
+        .single();
+
+      if (error || !data) {
+        resultDiv.innerHTML = `
+          <div style="padding:15px;border-radius:6px;background:#ffecec;color:#cc0000;">
+            ❌ Tracking code not found. Please check and try again.
+          </div>
+        `;
+        return;
       }
 
-      form.reset();
-      document.getElementById("parcel_id").value = "";
-      form.parentElement.style.display = "none";
-      overlay.style.display = "none";
-      loadParcels();
+      // ----------------------------
+      // Status Progress Logic
+      // ----------------------------
+      const statusSteps = {
+        "pending": 1,
+        "shipped": 2,
+        "in transit": 3,
+        "delivered": 4
+      };
+
+      const currentStep = statusSteps[(data.status || "").toLowerCase()] || 1;
+      const progressWidth = ((currentStep - 1) / 3) * 100;
+
+      // ----------------------------
+      // Display Parcel Info
+      // ----------------------------
+      resultDiv.innerHTML = `
+        <div style="background:#f4f7fb;padding:20px;border-radius:8px;margin-top:15px">
+
+          <h3 style="margin-bottom:15px;color:#2c3e50;">Shipment Details</h3>
+
+          <p><strong>Tracking Code:</strong> ${data.tracking_code}</p>
+          <p><strong>Sender:</strong> ${data.sender_name || "N/A"} (${data.sender_email || "N/A"})</p>
+          <p><strong>Receiver:</strong> ${data.receiver_name || "N/A"} (${data.receiver_email || "N/A"})</p>
+          <p><strong>Current Location:</strong> ${data.current_location || "Processing Center"}</p>
+          <p><strong>Package Details:</strong> ${data.parcel_details || "N/A"}</p>
+          <p><strong>Destination:</strong> ${data.destination || "N/A"}</p>
+          <p><strong>Expected Delivery:</strong> ${data.expected_delivery || "N/A"}</p>
+
+          <div class="tracker" style="margin-top:20px">
+            <h4>Status Progress</h4>
+            <div class="tracker-line" style="position:relative;height:10px;background:#ddd;border-radius:5px">
+              <div class="progress-fill" style="
+                position:absolute;
+                left:0;
+                top:0;
+                height:100%;
+                width:${progressWidth}%;
+                background:#4caf50;
+                border-radius:5px;
+                transition: width 0.5s;"></div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:10px">
+              <div style="text-align:center">
+                <div class="dot" style="
+                  width:15px;
+                  height:15px;
+                  background:${currentStep >= 1 ? '#4caf50' : '#fff'};
+                  border:2px solid #4caf50;
+                  border-radius:50%;
+                  margin:auto;
+                  transition: background 0.3s;"></div>
+                <span style="display:block;font-size:12px;margin-top:5px;font-weight:${currentStep===1?'bold':''}">Pending</span>
+              </div>
+
+              <div style="text-align:center">
+                <div class="dot" style="
+                  width:15px;
+                  height:15px;
+                  background:${currentStep >= 2 ? '#4caf50' : '#fff'};
+                  border:2px solid #4caf50;
+                  border-radius:50%;
+                  margin:auto;
+                  transition: background 0.3s;"></div>
+                <span style="display:block;font-size:12px;margin-top:5px;font-weight:${currentStep===2?'bold':''}">Shipped</span>
+              </div>
+
+              <div style="text-align:center">
+                <div class="dot" style="
+                  width:15px;
+                  height:15px;
+                  background:${currentStep >= 3 ? '#4caf50' : '#fff'};
+                  border:2px solid #4caf50;
+                  border-radius:50%;
+                  margin:auto;
+                  transition: background 0.3s;"></div>
+                <span style="display:block;font-size:12px;margin-top:5px;font-weight:${currentStep===3?'bold':''}">In Transit</span>
+              </div>
+
+              <div style="text-align:center">
+                <div class="dot" style="
+                  width:15px;
+                  height:15px;
+                  background:${currentStep >= 4 ? '#4caf50' : '#fff'};
+                  border:2px solid #4caf50;
+                  border-radius:50%;
+                  margin:auto;
+                  transition: background 0.3s;"></div>
+                <span style="display:block;font-size:12px;margin-top:5px;font-weight:${currentStep===4?'bold':''}">Delivered</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
     } catch (err) {
-      console.error("Error saving parcel:", err);
-      alert("Failed to save parcel. Check console.");
+      console.error("Tracking error:", err);
+      resultDiv.innerHTML = `
+        <div style="padding:15px;border-radius:6px;background:#ffecec;color:#cc0000;">
+          ⚠ Error fetching shipment. Try again later.
+        </div>
+      `;
     }
   });
+}
 
-  // Initial load
-  loadParcels();
-});
+// ----------------------------
+// PRINT RECEIPT
+// ----------------------------
+const printBtn = document.getElementById("print-receipt");
+if (printBtn) {
+  printBtn.addEventListener("click", () => {
+    const content = document.getElementById("tracking-result").innerHTML;
+    if (!content) {
+      alert("Please track a parcel first.");
+      return;
+    }
+
+    const receiptWindow = window.open("", "_blank");
+    receiptWindow.document.write(`
+      <html>
+      <head>
+        <title>Shipment Receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+          h1 { color: #ff6600; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>Birdin Shipment</h1>
+        ${content}
+        <p style="text-align:center;">© 2026 Birdin Shipment</p>
+      </body>
+      </html>
+    `);
+    receiptWindow.document.close();
+    receiptWindow.print();
+  });
+}
