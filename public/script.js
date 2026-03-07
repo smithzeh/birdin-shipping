@@ -1,6 +1,9 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
 
-// Supabase connection
+/* =========================
+   SUPABASE CONNECTION
+========================= */
+
 const SUPABASE_URL = "https://rirnbinprxnscfrfwrqt.supabase.co"
 const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi"
 
@@ -20,8 +23,10 @@ trackingForm.addEventListener("submit", async function(event) {
 
 event.preventDefault()
 
-const trackingCode = document.getElementById("customer-tracking-code").value
+const trackingCode = document.getElementById("customer-tracking-code").value.trim()
 const resultDiv = document.getElementById("tracking-result")
+
+resultDiv.innerHTML = "<p>Tracking shipment...</p>"
 
 try {
 
@@ -33,17 +38,81 @@ const { data, error } = await supabase
 
 if (error || !data) {
 
-resultDiv.innerHTML = "<p>Tracking code not found.</p>"
+resultDiv.innerHTML = `
+<div style="padding:15px;border-radius:6px;background:#ffecec;color:#cc0000;">
+❌ Tracking code not found. Please check and try again.
+</div>
+`
 
 } else {
 
+/* =========================
+   STATUS PROGRESS LOGIC
+========================= */
+
+const statusSteps = {
+"pending": 1,
+"shipped": 2,
+"in transit": 3,
+"delivered": 4
+}
+
+const currentStep = statusSteps[(data.status || "").toLowerCase()] || 1
+
+const progressWidth = ((currentStep - 1) / 3) * 100
+
+
 resultDiv.innerHTML = `
-<h3>Tracking Result</h3>
+<div style="background:#f4f7fb;padding:20px;border-radius:8px;margin-top:15px">
+
+<h3 style="margin-bottom:15px;color:#2c3e50;">Shipment Details</h3>
+
 <p><strong>Tracking Code:</strong> ${data.tracking_code}</p>
-<p><strong>Status:</strong> ${data.status}</p>
+
+<p><strong>Sender:</strong> ${data.sender_name || "N/A"}</p>
+
+<p><strong>Receiver:</strong> ${data.receiver_name || "N/A"}</p>
+
 <p><strong>Current Location:</strong> ${data.current_location || "Processing Center"}</p>
-<p><strong>Details:</strong> ${data.details}</p>
-<p><strong>Estimated Delivery:</strong> ${data.estimated_days || "N/A"}</p>
+
+<p><strong>Package Details:</strong> ${data.details || "N/A"}</p>
+
+<p><strong>Expected Delivery:</strong> ${data.expected_delivery || "N/A"}</p>
+
+
+<div class="tracker">
+
+<h4>Status: ${data.status}</h4>
+
+<div class="tracker-line">
+
+<div class="progress-fill" style="width:${progressWidth}%"></div>
+
+<div class="step ${currentStep >= 1 ? "completed" : ""} ${currentStep === 1 ? "active" : ""}">
+<div class="dot"></div>
+<div class="label">Pending</div>
+</div>
+
+<div class="step ${currentStep >= 2 ? "completed" : ""} ${currentStep === 2 ? "active" : ""}">
+<div class="dot"></div>
+<div class="label">Shipped</div>
+</div>
+
+<div class="step ${currentStep >= 3 ? "completed" : ""} ${currentStep === 3 ? "active" : ""}">
+<div class="dot"></div>
+<div class="label">In Transit</div>
+</div>
+
+<div class="step ${currentStep >= 4 ? "completed" : ""} ${currentStep === 4 ? "active" : ""}">
+<div class="dot"></div>
+<div class="label">Delivered</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
 `
 
 }
@@ -51,7 +120,12 @@ resultDiv.innerHTML = `
 } catch (error) {
 
 console.error("Tracking error:", error)
-alert("Failed to fetch parcel details.")
+
+resultDiv.innerHTML = `
+<div style="padding:15px;border-radius:6px;background:#ffecec;color:#cc0000;">
+⚠ Error fetching shipment. Try again later.
+</div>
+`
 
 }
 
@@ -62,7 +136,7 @@ alert("Failed to fetch parcel details.")
 
 
 /* =========================
-   PRINT RECEIPT
+   PRINT RECEIPT (PUBLIC)
 ========================= */
 
 const printBtn = document.getElementById("print-receipt")
@@ -71,34 +145,36 @@ if (printBtn) {
 
 printBtn.addEventListener("click", function() {
 
-const trackingCode = document.getElementById("customer-tracking-code").value
-const resultDiv = document.getElementById("tracking-result").textContent
+const content = document.getElementById("tracking-result").innerHTML
 
-if (!trackingCode || !resultDiv) {
+if (!content) {
 
-alert("Please track a parcel first to print receipt.")
+alert("Please track a parcel first.")
+
 return
 
 }
 
-const receiptContent = `
+const receiptWindow = window.open("", "_blank")
+
+receiptWindow.document.write(`
 <html>
 <head>
 <title>Shipment Receipt</title>
 </head>
+
 <body>
+
 <h1>Birdin Shipment</h1>
-<p><strong>Tracking Code:</strong> ${trackingCode}</p>
-<p>${resultDiv}</p>
-<footer>
-<p>&copy; 2026 Birdin Shipment</p>
-</footer>
+
+${content}
+
+<p>© 2026 Birdin Shipment</p>
+
 </body>
 </html>
-`
+`)
 
-const receiptWindow = window.open("", "_blank")
-receiptWindow.document.write(receiptContent)
 receiptWindow.document.close()
 receiptWindow.print()
 
@@ -125,8 +201,11 @@ const { data, error } = await supabase
 .select("*")
 
 if (error) {
+
 console.error("Error loading parcels:", error)
+
 return
+
 }
 
 parcelList.innerHTML = ""
@@ -141,9 +220,12 @@ row.innerHTML = `
 <td>${parcel.receiver_name || "N/A"}</td>
 <td>${parcel.current_location || "N/A"}</td>
 <td>${parcel.status || "Pending"}</td>
+
 <td>
 <button onclick="editParcel('${parcel.tracking_code}')">Edit</button>
+
 <button onclick="deleteParcel('${parcel.tracking_code}')">Delete</button>
+
 <button onclick="printParcelReceipt('${parcel.tracking_code}')">Print</button>
 </td>
 `
@@ -190,58 +272,6 @@ loadParcels()
 window.editParcel = function(trackingCode) {
 
 window.location.href = `edit-parcel.html?trackingCode=${trackingCode}`
-
-}
-
-
-
-/* =========================
-   PRINT RECEIPT FROM ADMIN
-========================= */
-
-window.printParcelReceipt = async function(trackingCode) {
-
-const { data, error } = await supabase
-.from("parcels")
-.select("*")
-.eq("tracking_code", trackingCode)
-.single()
-
-if (error || !data) {
-
-alert("Failed to fetch parcel details.")
-return
-
-}
-
-const receiptContent = `
-<html>
-<head>
-<title>Shipment Receipt</title>
-</head>
-<body>
-<h1>Birdin Shipment</h1>
-<h2>Shipment Receipt</h2>
-
-<p><strong>Tracking Code:</strong> ${data.tracking_code}</p>
-<p><strong>Sender:</strong> ${data.sender_name}</p>
-<p><strong>Receiver:</strong> ${data.receiver_name}</p>
-<p><strong>Status:</strong> ${data.status}</p>
-<p><strong>Current Location:</strong> ${data.current_location}</p>
-<p><strong>Details:</strong> ${data.details}</p>
-
-<footer>
-<p>&copy; 2026 Birdin Shipment</p>
-</footer>
-
-</body>
-</html>
-`
-
-const receiptWindow = window.open("", "_blank")
-receiptWindow.document.write(receiptContent)
-receiptWindow.document.close()
-receiptWindow.print()
 
 }
 

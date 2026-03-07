@@ -1,127 +1,184 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+// ----------------------------
+// SUPABASE CONNECTION
+// ----------------------------
 const SUPABASE_URL = "https://rirnbinprxnscfrfwrqt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_12CvBFHAfesHOwh5sKJKaA_iryIF9Mi";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ----------------------------
 // Generate random tracking code
+// ----------------------------
 function generateTrackingCode() {
   return "TRK" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// Load parcels into table
+// ----------------------------
+// LOAD PARCELS INTO TABLE
+// ----------------------------
 async function loadParcels() {
   const table = document.getElementById("parcel-list");
+  if (!table) return;
+
   table.innerHTML = "";
 
-  const { data, error } = await supabase
-    .from("parcels")
-    .select("*")
-    .order("date_sent", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("parcels")
+      .select("*")
+      .order("date_sent", { ascending: false });
 
-  if (error) {
-    console.error("Error loading parcels:", error);
+    if (error) throw error;
+
+    data.forEach(parcel => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${parcel.tracking_code}</td>
+        <td>${parcel.sender_name || parcel.sender_address}</td>
+        <td>${parcel.receiver_name || parcel.receiver_address}</td>
+        <td>${parcel.current_location || ""}</td>
+        <td>${parcel.status}</td>
+        <td>
+          <button onclick="editParcel('${parcel.id}')">Edit</button>
+          <button onclick="deleteParcel('${parcel.id}')">Delete</button>
+          <button onclick="printParcel('${parcel.id}')">Print</button>
+        </td>
+      `;
+      table.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Error loading parcels:", err);
     alert("Failed to load parcels. Check console.");
-    return;
   }
-
-  data.forEach(parcel => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${parcel.tracking_code}</td>
-      <td>${parcel.sender_name || parcel.sender_address}</td>
-      <td>${parcel.receiver_name || parcel.receiver_address}</td>
-      <td>${parcel.current_location || ""}</td>
-      <td>${parcel.status}</td>
-      <td>
-        <button onclick="editParcel('${parcel.id}')">Edit</button>
-        <button onclick="deleteParcel('${parcel.id}')">Delete</button>
-        <button onclick="printParcel('${parcel.id}')">Print</button>
-      </td>
-    `;
-    table.appendChild(row);
-  });
 }
 
-// Delete parcel (already existing)
+// ----------------------------
+// DELETE PARCEL
+// ----------------------------
 window.deleteParcel = async function(id) {
-  const { error } = await supabase.from("parcels").delete().eq("id", id);
-  if (error) {
-    console.error("Error deleting parcel:", error);
-    alert("Failed to delete parcel. Check console.");
-  } else {
+  const confirmDelete = confirm("Delete this parcel?");
+  if (!confirmDelete) return;
+
+  try {
+    const { error } = await supabase.from("parcels").delete().eq("id", id);
+    if (error) throw error;
     loadParcels();
+  } catch (err) {
+    console.error("Error deleting parcel:", err);
+    alert("Failed to delete parcel. Check console.");
   }
 };
 
-// ---------- NEW: Edit Parcel ----------
+// ----------------------------
+// EDIT PARCEL
+// ----------------------------
 window.editParcel = async function(id) {
-  const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
-  if (error) {
-    console.error("Error fetching parcel:", error);
+  try {
+    const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
+    if (error) throw error;
+
+    // Show the form popup
+    document.getElementById("parcel-form").style.display = "block";
+    document.getElementById("overlay").style.display = "block";
+
+    // Prefill form fields
+    document.getElementById("parcel_id").value = data.id;
+    document.getElementById("sender_name").value = data.sender_name || "";
+    document.getElementById("sender_email").value = data.sender_email || "";
+    document.getElementById("sender_address").value = data.sender_address || "";
+    document.getElementById("receiver_name").value = data.receiver_name || "";
+    document.getElementById("receiver_email").value = data.receiver_email || "";
+    document.getElementById("receiver_address").value = data.receiver_address || "";
+    document.getElementById("destination").value = data.destination || "";
+    document.getElementById("parcel_details").value = data.parcel_details || "";
+    document.getElementById("date_sent").value = data.date_sent || "";
+    document.getElementById("expected_delivery").value = data.expected_delivery || "";
+    document.getElementById("status").value = data.status || "Pending";
+    document.getElementById("current_location").value = data.current_location || "";
+
+    // Scroll to form
+    document.getElementById("parcel-form").scrollIntoView({ behavior: "smooth" });
+  } catch (err) {
+    console.error("Error fetching parcel:", err);
     alert("Failed to fetch parcel. Check console.");
-    return;
   }
-
-  // Prefill form with existing data
-  document.getElementById("parcel_id").value = data.id; // hidden field for editing
-  document.getElementById("sender_name").value = data.sender_name;
-  document.getElementById("sender_email").value = data.sender_email;
-  document.getElementById("sender_address").value = data.sender_address;
-
-  document.getElementById("receiver_name").value = data.receiver_name;
-  document.getElementById("receiver_email").value = data.receiver_email;
-  document.getElementById("receiver_address").value = data.receiver_address;
-
-  document.getElementById("destination").value = data.destination;
-  document.getElementById("parcel_details").value = data.parcel_details;
-
-  document.getElementById("date_sent").value = data.date_sent;
-  document.getElementById("expected_delivery").value = data.expected_delivery;
-
-  document.getElementById("status").value = data.status;
-  document.getElementById("current_location").value = data.current_location;
-
-  // Scroll to form
-  document.getElementById("parcel-form").scrollIntoView({ behavior: "smooth" });
 };
 
-// ---------- NEW: Print Parcel ----------
+// ----------------------------
+// PRINT PARCEL RECEIPT
+// ----------------------------
 window.printParcel = async function(id) {
-  const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
-  if (error) {
-    console.error("Error fetching parcel for print:", error);
-    alert("Failed to fetch parcel. Check console.");
-    return;
+  try {
+    const { data, error } = await supabase.from("parcels").select("*").eq("id", id).single();
+    if (error) throw error;
+
+    const receiptHTML = `
+    <html>
+    <head>
+      <title>Shipment Receipt</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+        .receipt { max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 30px; border-radius: 8px; }
+        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ff6600; padding-bottom: 10px; margin-bottom: 20px; }
+        .logo { height: 60px; }
+        .company { font-size: 24px; font-weight: bold; color: #ff6600; }
+        .title { text-align: center; font-size: 22px; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        .label { font-weight: bold; width: 200px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #777; }
+        .tracking { font-size: 18px; font-weight: bold; text-align: center; margin-top: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="receipt">
+        <div class="header">
+          <div><img src="logo.png" class="logo"></div>
+          <div class="company">Birdin Shipment</div>
+        </div>
+        <div class="title">Shipment Receipt</div>
+        <div class="tracking">Tracking Code: ${data.tracking_code}</div>
+        <table>
+          <tr><td class="label">Sender</td><td>${data.sender_name} (${data.sender_email})</td></tr>
+          <tr><td class="label">Receiver</td><td>${data.receiver_name} (${data.receiver_email})</td></tr>
+          <tr><td class="label">Destination</td><td>${data.destination}</td></tr>
+          <tr><td class="label">Parcel Details</td><td>${data.parcel_details}</td></tr>
+          <tr><td class="label">Current Status</td><td>${data.status}</td></tr>
+          <tr><td class="label">Current Location</td><td>${data.current_location}</td></tr>
+          <tr><td class="label">Date Sent</td><td>${data.date_sent}</td></tr>
+          <tr><td class="label">Expected Delivery</td><td>${data.expected_delivery}</td></tr>
+        </table>
+        <div class="footer">
+          <p>Birdin Shipment Logistics</p>
+          <p>Thank you for shipping with us.</p>
+          <p>© 2026 Birdin Shipment</p>
+        </div>
+      </div>
+      <script>window.print();</script>
+    </body>
+    </html>
+    `;
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
+  } catch (err) {
+    console.error("Error printing parcel:", err);
+    alert("Failed to print parcel. Check console.");
   }
-
-  const content = `
-    <h2>Parcel Receipt</h2>
-    <p>Tracking Code: ${data.tracking_code}</p>
-    <p>Sender: ${data.sender_name} (${data.sender_email})</p>
-    <p>Receiver: ${data.receiver_name} (${data.receiver_email})</p>
-    <p>Destination: ${data.destination}</p>
-    <p>Parcel Details: ${data.parcel_details}</p>
-    <p>Status: ${data.status}</p>
-    <p>Current Location: ${data.current_location}</p>
-    <p>Date Sent: ${data.date_sent}</p>
-    <p>Expected Delivery: ${data.expected_delivery}</p>
-  `;
-
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(content);
-  printWindow.print();
-  printWindow.close();
 };
 
-// Handle form submission (existing create logic modified for edit)
+// ----------------------------
+// HANDLE CREATE OR UPDATE PARCEL
+// ----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("parcel-form");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const parcelId = document.getElementById("parcel_id").value; // hidden field
+    const parcelId = document.getElementById("parcel_id").value;
 
     const parcel = {
       sender_name: document.getElementById("sender_name").value,
@@ -153,7 +210,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       form.reset();
-      document.getElementById("parcel_id").value = ""; // reset hidden field
+      document.getElementById("parcel_id").value = "";
+      document.getElementById("parcel-form").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
       loadParcels();
     } catch (err) {
       console.error("Error saving parcel:", err);
@@ -161,6 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Initial load of parcels
+  // Initial load
   loadParcels();
 });

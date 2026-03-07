@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel - Courier Service</title>
+
+<title>Admin Panel - Birdin Shipment</title>
+
 <link rel="stylesheet" href="./admin-styles.css">
 
 <style>
+
 /* Popup styling */
+
 #parcel-form{
 position:fixed;
 top:50%;
@@ -40,6 +46,7 @@ background:rgba(0,0,0,0.4);
 display:none;
 z-index:999;
 }
+
 </style>
 
 </head>
@@ -47,17 +54,26 @@ z-index:999;
 <body>
 
 <header>
+
 <img src="logo.png" alt="Birdin Shipment">
+
 <h1>Admin Panel</h1>
+
 </header>
+
 
 <main>
 
 <section>
+
 <h2>Welcome to the Admin Panel</h2>
-<p>Manage your shipments efficiently. Log new parcels, track existing ones, and ensure smooth delivery operations.</p>
-<img src="Plane.png" alt="Courier Service" style="width: 100%; border-radius: 8px;">
+
+<p>Manage shipments and update delivery status.</p>
+
+<img src="Plane.png" alt="Courier Service" style="width:100%; border-radius:8px;">
+
 </section>
+
 
 <section>
 
@@ -68,6 +84,7 @@ z-index:999;
 <table>
 
 <thead>
+
 <tr>
 <th>Tracking Code</th>
 <th>Sender</th>
@@ -76,10 +93,10 @@ z-index:999;
 <th>Status</th>
 <th>Actions</th>
 </tr>
+
 </thead>
 
-<tbody id="parcel-list">
-</tbody>
+<tbody id="parcel-list"></tbody>
 
 </table>
 
@@ -87,44 +104,59 @@ z-index:999;
 
 </main>
 
+
 <footer>
-<p>&copy; 2026 Courier Service</p>
+
+<p>© 2026 Birdin Shipment</p>
+
 </footer>
 
 
-<!-- Overlay -->
 <div id="overlay"></div>
 
-<!-- Popup Form -->
+
+<!-- PARCEL FORM -->
+
 <div id="parcel-form">
 
-<h3>Create Parcel</h3>
+<h3>Create / Edit Parcel</h3>
 
-<form id="form">
+<form id="parcelForm">
 
-<input id="sender" placeholder="Sender Address" required>
+<input type="hidden" id="parcel_id">
 
-<input id="receiver" placeholder="Receiver Address" required>
+<input id="sender_name" placeholder="Sender Name" required>
+
+<input id="receiver_name" placeholder="Receiver Name" required>
 
 <input id="destination" placeholder="Destination Location" required>
 
-<textarea id="details" placeholder="Parcel Details"></textarea>
+<textarea id="parcel_details" placeholder="Parcel Details"></textarea>
 
 <label>Date Sent</label>
-<input type="date" id="dateSent">
+<input type="date" id="date_sent">
 
 <label>Expected Delivery</label>
-<input type="date" id="deliveryDate">
+<input type="date" id="expected_delivery">
+
+<label>Status</label>
 
 <select id="status">
-<option value="Pending">Pending</option>
-<option value="Shipped">Shipped</option>
-<option value="Delivered">Delivered</option>
+
+<option value="pending">Pending</option>
+
+<option value="shipped">Shipped</option>
+
+<option value="in transit">In Transit</option>
+
+<option value="delivered">Delivered</option>
+
 </select>
 
-<input id="location" placeholder="Current Location">
+<input id="current_location" placeholder="Current Location">
 
 <button type="submit">Save Parcel</button>
+
 <button type="button" id="close-form">Cancel</button>
 
 </form>
@@ -140,18 +172,24 @@ const overlay = document.getElementById("overlay")
 const closeBtn = document.getElementById("close-form")
 
 createBtn.onclick = () => {
+
 formPopup.style.display = "block"
 overlay.style.display = "block"
+
 }
 
 closeBtn.onclick = () => {
+
 formPopup.style.display = "none"
 overlay.style.display = "none"
+
 }
 
 overlay.onclick = () => {
+
 formPopup.style.display = "none"
 overlay.style.display = "none"
+
 }
 
 </script>
